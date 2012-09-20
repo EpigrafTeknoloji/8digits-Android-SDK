@@ -27,9 +27,9 @@ public class Constants {
   public static final String ERROR            = "error";
   public static final String ERROR_CODE       = "errorCode";
   public static final String ERROR_MESSAGE    = "errorMessage";
-  public static final String URL   = "url";
-  public static final String PAIRS = "pairs";
-  public static final String CALLBACK = "callback";
-  public static final String PRIORITY = "priority";
+  public static final String URL              = "url";
+  public static final String PAIRS            = "pairs";
+  public static final String CALLBACK         = "callback";
+  public static final String PRIORITY         = "priority";
 
 }
