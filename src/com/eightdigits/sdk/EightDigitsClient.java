@@ -35,7 +35,6 @@ public class EightDigitsClient {
   private static Boolean          authRequestSent   = false;
   private static Boolean          newHitRequestSent = false;
   public static EightDigitsClient instance          = null;
-  
 
   public static synchronized EightDigitsClient getInstance() {
     if (instance != null)
@@ -58,15 +57,15 @@ public class EightDigitsClient {
     this.setTrackingCode(trackingCode);
     this.setVisitorCode(UUID.randomUUID().toString());
     this.setActivity(activity);
-    
+
     Runnable apiRequestQueueRunnable = new EightDigitsApiRequestQueue(this);
     new Thread(apiRequestQueueRunnable).start();
-    
+
   }
 
   /**
    * Authenticates client with username and password, returns authToken for api
-   * calls. If api call fails, returns null.
+   * calls.
    * 
    * @param username Your 8digits username
    * @param password Your 8digits password
@@ -103,7 +102,7 @@ public class EightDigitsClient {
   public void reAuth() {
     this.authWithUsername(this.getUsername(), this.getPassword());
   }
-  
+
   /**
    * Call this method when your application Auth token should be created for
    * using this method. API returns hitCode and sessionCode. Method sets
@@ -119,13 +118,11 @@ public class EightDigitsClient {
     String model = "Linux";
     String userAgent = "Mozilla/5.0 (" + model + "; U; " + "Android "
         + android.os.Build.VERSION.RELEASE + "; " + android.os.Build.MODEL;
-    
+
     /*
-    if (systemVersion >= 10) {
-      userAgent += " " + android.os.Build.SERIAL;
-    }
-    */
-    
+     * if (systemVersion >= 10) { userAgent += " " + android.os.Build.SERIAL; }
+     */
+
     userAgent += " like Mac OS X; en-us) AppleWebKit (KHTML, like Gecko) Mobile/8A293 Safari";
 
     DisplayMetrics metrics = new DisplayMetrics();
@@ -345,7 +342,6 @@ public class EightDigitsClient {
     EightDigitsApiRequestQueue.push(url, pairs, callback, priority);
   }
 
-
   /**
    * Generates key-value pairs for Http Request entity
    * 
@@ -381,7 +377,7 @@ public class EightDigitsClient {
     }
     callback.handleResult(result);
   }
-  
+
   /**
    * Creates new hit for activity at onResume event
    * 
@@ -473,7 +469,7 @@ public class EightDigitsClient {
   public void setHitCode(String hitCode) {
     this.hitCode = hitCode;
   }
-  
+
   public static Boolean getAuthRequestSent() {
     return authRequestSent;
   }
@@ -489,5 +485,5 @@ public class EightDigitsClient {
   public static void setNewHitRequestSent(Boolean newHitRequestSent) {
     EightDigitsClient.newHitRequestSent = newHitRequestSent;
   }
-  
+
 }

@@ -2,6 +2,9 @@
 
 ## Usage
 
+### Adding SDK To Your Project
+You can add 8digits Android SDK to your project by adding 8digits-sdk.jar file to your project.
+
 ### Getting client instance
 You should create new instance of client in your main activity.
 
@@ -16,19 +19,19 @@ this.eightDigitsClient = EightDigitsClient.getInstance();
 ```
 
 ### Creating Auth token (Creating session)
-After getting instance of client, you should create auth token to make requests. To create auth token
+After getting instance of client, you should create `authToken` to make requests. To create `authToken`
 
 ```java
 this.eightDigitsClient.authWithUsername("<USERNAME>", "<PASSWORD>");
 ```
 
-Creating auth token in your main activity is enough. You don't have to call this method in other activities.
+Creating `authToken` in your main activity is enough. You don't have to call this method in other activities.
 
 ### Creating New Visit
-After creating your session (Creating auth token), you should call newVisit method which creates sessionCode and hitCode. You will use hitCode when you create event for activity. To track what is happening in your activity, client associates event with hitCode.
+After creating your session (Creating auth token), you should call newVisit method which creates sessionCode and hitCode. 8digits SDK will associate `hitCode` and `sessionCode` with your view to use later when sending events. 
 
 ```java
-int hitCode = this.eightDigitsClient.newVisit("<Title of Visit>", "<Path>");
+this.eightDigitsClient.newVisit("<Title of Visit>", "<Path>");
 ```
 
 ### Creating New Hit
@@ -38,25 +41,57 @@ If you want to create new hitCode you can call ```newScreen``` method of client.
 int hitCode = this.eightDigitsClient.newScreen("<Screen Name>", "<Screen Path>");
 ```
 
+### Re-creating Hit
+Every time user navigate to your activity, you need create new hitCode. Doing this is so easy in 8digits SDK. You just need to call ```onRestart``` method of client in your Activity's onRestart method. You can see example usage below.
+
+```java
+@Override
+    protected void onRestart() {
+      super.onRestart();
+      this.eightDigitsClient.onRestart("<Title of Visit>", "<Path>");
+}
+```
+
 ### Creating New Event
-To create a new event, you can use ```newEvent``` method. You should pass hitCode for creating a new event. Client sends new events to
-API asynchronously. So there is no return value.
+To create a new event, you can use ```newEvent``` method. 8digits SDK automatically adds hitCode to your new event request. SDK, sends events to the server asynchronously and does not affect your application's user experience.
 
 ```java
-this.eightDigitsClient.newEvent("<Event Key>", "<Event Value>", this.hitCode);
+this.eightDigitsClient.newEvent("<Event Key>", "<Event Value>");
 ```
 
-### Creating Listener
-8Digits client is not handling results of asynchronous api calls. If you want to get results of this calls, you can set a listener for them. To do this,
+### Getting User Score
+You can get user badges with ```score``` method. This method just takes one callback argument. Callback is a instance of ``EightDigitsResultListener`` class. You can see example below.
+
 ```java
-this.eightDigitsClient.setAsyncResultListener(new AsyncResultListener());
+this.eightDigitsClient.score(new EightDigitsResultListener() {
+        
+        @Override
+        public void handleResult(JSONObject result) {
+          // TODO Auto-generated method stub
+          
+        }
+      });
 ```
-You can see a example of listener in ```com.eightdigits.hello``` package. ```AsyncResultListener``` class is a listener.
+
+You need to control ``error`` key in handleResult method. If result has error key, this means your api request is failed.
+
+### Getting User Badges
+You can get user badges with ```badges``` method. This method just takes one callback argument. Callback is a instance of ``EightDigitsResultListener`` class. You can call this method how you call score method. You can see example above.
 
 
-### Example and Import
+### Ending Hit
+You should end user hits in your activities onDestroy method. You can do this by calling, ``endScreen`` method. You don't need to send any parameter to this method. 
 
-You can see example usages of this methods in this application. To import SDK to your application, you can use 8digits-sdk.jar file.
+```java
+this.eightDigitsClient.endScreen();
+```
+
+### Ending Visit
+You should end user visit. You should call this method only in your main activity's onDestroy method. 
+
+```java
+this.eightDigitsClient.endVisit();
+```
 
 ### Author
 
