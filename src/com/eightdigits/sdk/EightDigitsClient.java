@@ -22,21 +22,20 @@ import android.widget.ImageView;
 
 public class EightDigitsClient {
 
-  private Activity                       activity;
-  private String                         urlPrefix;
-  private String                         trackingCode;
-  private String                         visitorCode;
-  private String                         authToken;
-  private String                         sessionCode;
-  private String                         username;
-  private String                         password;
-  private EightDigitsAsyncResultListener asyncResultListener;
+  private Activity                activity;
+  private String                  urlPrefix;
+  private String                  trackingCode;
+  private String                  visitorCode;
+  private String                  authToken;
+  private String                  sessionCode;
+  private String                  hitCode;
+  private String                  username;
+  private String                  password;
 
-  private static final String            TAG                 = "EightDigitsSDK";
-  public static boolean                  BREAK_RESPONSE_LOOP = false;
-  public static String                   LAST_API_RESPONSE   = "";
-  public static EightDigitsApiException  LAST_EXCEPTION      = null;
-  public static EightDigitsClient        instance            = null;
+  private static Boolean          authRequestSent   = false;
+  private static Boolean          newHitRequestSent = false;
+  public static EightDigitsClient instance          = null;
+  
 
   public static synchronized EightDigitsClient getInstance() {
     if (instance != null)
@@ -59,7 +58,10 @@ public class EightDigitsClient {
     this.setTrackingCode(trackingCode);
     this.setVisitorCode(UUID.randomUUID().toString());
     this.setActivity(activity);
-
+    
+    Runnable apiRequestQueueRunnable = new EightDigitsApiRequestQueue(this);
+    new Thread(apiRequestQueueRunnable).start();
+    
   }
 
   /**
@@ -70,26 +72,38 @@ public class EightDigitsClient {
    * @param password Your 8digits password
    * @return
    */
-  public void authWithUsername(String username, String password)
-      throws EightDigitsApiException {
+  public void authWithUsername(String username, String password) {
 
     this.setUsername(username);
     this.setPassword(password);
 
     Map<String, String> params = new HashMap<String, String>(2);
-    params.put("username", this.getUsername());
-    params.put("password", this.getPassword());
+    params.put(Constants.USERNAME, this.getUsername());
+    params.put(Constants.PASSWORD, this.getPassword());
 
-    JSONObject response = this.syncApiRequest("/api/auth", params);
+    EightDigitsResultListener callback = new EightDigitsResultListener() {
+      @Override
+      public void handleResult(JSONObject result) {
+        try {
+          String authToken = result.getJSONObject(Constants.DATA).getString(Constants.AUTH_TOKEN);
+          EightDigitsClient.getInstance().setAuthToken(authToken);
+        } catch (JSONException e) {
+          logError(e.getMessage());
+        }
+      }
+    };
 
-    try {
-      String authToken = response.getJSONObject("data").getString("authToken");
-      this.setAuthToken(authToken);
-    } catch (JSONException e) {
-      logError(e.getMessage());
-    }
+    EightDigitsClient.authRequestSent = true;
+    this.api("/api/auth", params, callback, EightDigitsApiRequestQueue.FIRST_PRIORITY);
   }
 
+  /**
+   * Calls authWithUsername method with existing username and password values
+   */
+  public void reAuth() {
+    this.authWithUsername(this.getUsername(), this.getPassword());
+  }
+  
   /**
    * Call this method when your application Auth token should be created for
    * using this method. API returns hitCode and sessionCode. Method sets
@@ -100,26 +114,19 @@ public class EightDigitsClient {
    * @param path Path for your application. Example : /home, /list
    * @return Returns hitCode for other events on screen.
    */
-  public String newVisit(String title, String path)
-      throws EightDigitsApiException {
-    String hitCode = null;
-
+  public void newVisit(String title, String path) {
     int systemVersion = android.os.Build.VERSION.SDK_INT;
-    // String systemName = "SystemName";
     String model = "Linux";
-    String userAgent = "Mozilla/5.0 ("
-        + model
-        + "; U; "
-        + "Android "
-        + android.os.Build.VERSION.RELEASE
-        + "; "
-        + android.os.Build.MODEL;
-        
-    if(systemVersion >= 10) {
-      userAgent += " "
-          + android.os.Build.SERIAL;
+    String userAgent = "Mozilla/5.0 (" + model + "; U; " + "Android "
+        + android.os.Build.VERSION.RELEASE + "; " + android.os.Build.MODEL;
+    
+    /*
+    if (systemVersion >= 10) {
+      userAgent += " " + android.os.Build.SERIAL;
     }
-        userAgent += " like Mac OS X; en-us) AppleWebKit (KHTML, like Gecko) Mobile/8A293 Safari";
+    */
+    
+    userAgent += " like Mac OS X; en-us) AppleWebKit (KHTML, like Gecko) Mobile/8A293 Safari";
 
     DisplayMetrics metrics = new DisplayMetrics();
     activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -128,33 +135,40 @@ public class EightDigitsClient {
     String language = Locale.getDefault().getDisplayLanguage();
 
     Map<String, String> params = new HashMap<String, String>();
-    params.put("authToken", this.getAuthToken());
-    params.put("trackingCode", this.getTrackingCode());
-    params.put("visitorCode", this.getVisitorCode());
-    params.put("pageTitle", title);
-    params.put("path", path);
-    params.put("screenWidth", new Integer(width).toString());
-    params.put("screenHeight", new Integer(height).toString());
-    params.put("color", "24");
-    params.put("acceptLang", language);
-    params.put("flashVersion", "0.0.0");
-    params.put("javaEnabled", "false");
-    params.put("userAgent", userAgent);
-    params.put("device", android.os.Build.MANUFACTURER);
-    params.put("vendor", android.os.Build.BRAND);
-    params.put("model", android.os.Build.MODEL);
+    params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+    params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+    params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+    params.put(Constants.PAGE_TITLE, title);
+    params.put(Constants.PATH, path);
+    params.put(Constants.SCREEN_WIDTH, Integer.valueOf(width).toString());
+    params.put(Constants.SCREEN_HEIGHT, Integer.valueOf(height).toString());
+    params.put(Constants.COLOR, "24");
+    params.put(Constants.ACCEPT_LANG, language);
+    params.put(Constants.FLASH_VERSION, "0.0.0");
+    params.put(Constants.JAVA_ENABLED, "false");
+    params.put(Constants.USER_AGENT, userAgent);
+    params.put(Constants.DEVICE, android.os.Build.MANUFACTURER);
+    params.put(Constants.VENDOR, android.os.Build.BRAND);
+    params.put(Constants.MODEL, android.os.Build.MODEL);
 
-    try {
-      JSONObject response = this.syncApiRequest("/api/visit/create", params);
-      JSONObject data = response.getJSONObject("data");
-      hitCode = data.getString("hitCode");
-      this.setSessionCode(data.getString("sessionCode"));
-      return hitCode;
-    } catch (JSONException e) {
-      logError(e.getMessage());
-    }
+    EightDigitsResultListener callback = new EightDigitsResultListener() {
+      @Override
+      public void handleResult(JSONObject result) {
+        EightDigitsClient instance = EightDigitsClient.getInstance();
 
-    return hitCode;
+        JSONObject data;
+        try {
+          data = result.getJSONObject(Constants.DATA);
+          instance.setHitCode(data.getString(Constants.HIT_CODE));
+          instance.setSessionCode(data.getString(Constants.SESSION_CODE));
+        } catch (JSONException e) {
+          Log.e(Constants.EIGHT_DIGITS_SDK, e.getMessage());
+        }
+      }
+    };
+
+    EightDigitsClient.newHitRequestSent = true;
+    this.api("/api/visit/create", params, callback, EightDigitsApiRequestQueue.SECOND_PRIORITY);
   }
 
   /**
@@ -166,25 +180,30 @@ public class EightDigitsClient {
    * @param path Path for your application. Example : /home, /list
    * @return
    */
-  public String newScreen(String title, String path)
-      throws EightDigitsApiException {
-    String hitCode = null;
+  public void newScreen(String title, String path) {
     Map<String, String> params = new HashMap<String, String>();
-    params.put("authToken", this.getAuthToken());
-    params.put("trackingCode", this.getTrackingCode());
-    params.put("visitorCode", this.getVisitorCode());
-    params.put("sessionCode", this.getSessionCode());
-    params.put("pageTitle", title);
-    params.put("path", path);
+    params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+    params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+    params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+    params.put(Constants.SESSION_CODE, this.getSessionCode());
+    params.put(Constants.PAGE_TITLE, title);
+    params.put(Constants.PATH, path);
 
-    try {
-      JSONObject response = this.syncApiRequest("/api/hit/create", params);
-      JSONObject data = response.getJSONObject("data");
-      hitCode = data.getString("hitCode");
-    } catch (JSONException e) {
-      logError(e.getMessage());
-    }
-    return hitCode;
+    EightDigitsResultListener callback = new EightDigitsResultListener() {
+
+      @Override
+      public void handleResult(JSONObject result) {
+        try {
+          JSONObject data = result.getJSONObject(Constants.DATA);
+          EightDigitsClient.getInstance().setHitCode(data.getString(Constants.HIT_CODE));
+        } catch (JSONException e) {
+          logError(e.getMessage());
+        }
+      }
+    };
+
+    EightDigitsClient.newHitRequestSent = true;
+    this.api("/api/hit/create", params, callback, EightDigitsApiRequestQueue.SECOND_PRIORITY);
   }
 
   /**
@@ -196,17 +215,22 @@ public class EightDigitsClient {
    * @param hitCode hitCode for activity which you get from newScreen or new
    *          Visit method.
    */
-  public void newEvent(String key, String value, String hitCode) {
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("authToken", this.getAuthToken());
-    params.put("trackingCode", this.getTrackingCode());
-    params.put("visitorCode", this.getVisitorCode());
-    params.put("sessionCode", this.getSessionCode());
-    params.put("hitCode", hitCode);
-    params.put("key", key);
-    params.put("value", value);
-
-    this.asyncApiRequest("/api/event/create", params);
+  public void newEvent(String key, String value) {
+    if (!EightDigitsClient.authRequestSent
+        || !EightDigitsClient.newHitRequestSent) {
+      String message = "Please authanticate and create a hit before sending new event.";
+      logError(message);
+    } else {
+      Map<String, String> params = new HashMap<String, String>();
+      params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+      params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+      params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+      params.put(Constants.SESSION_CODE, this.getSessionCode());
+      params.put(Constants.HIT_CODE, this.getHitCode());
+      params.put(Constants.KEY, key);
+      params.put(Constants.VALUE, value);
+      this.api("/api/event/create", params, null, EightDigitsApiRequestQueue.THIRD_PRIORITY);
+    }
   }
 
   /**
@@ -215,22 +239,19 @@ public class EightDigitsClient {
    * 
    * @return
    */
-  public Integer score() throws EightDigitsApiException {
-    Integer score = null;
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("authToken", this.getAuthToken());
-    params.put("trackingCode", this.getTrackingCode());
-    params.put("visitorCode", this.getVisitorCode());
-
-    try {
-      JSONObject response = this.syncApiRequest("/api/visitor/score", params);
-      JSONObject data = response.getJSONObject("data");
-      score = data.getInt("score");
-    } catch (JSONException e) {
-      logError(e.getMessage());
+  public void score(EightDigitsResultListener callback) {
+    if (!EightDigitsClient.authRequestSent) {
+      String errorMessage = "Please authenticate before calling score method";
+      Integer errorCode = -1001;
+      callCallbackWithError(errorMessage, errorCode, callback);
+      logError(errorMessage);
+    } else {
+      Map<String, String> params = new HashMap<String, String>();
+      params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+      params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+      params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+      this.api("/api/visitor/score", params, callback, EightDigitsApiRequestQueue.THIRD_PRIORITY);
     }
-
-    return score;
   }
 
   /**
@@ -239,42 +260,43 @@ public class EightDigitsClient {
    * 
    * @return List of badge id's
    */
-  public List<String> badges() throws EightDigitsApiException {
-    List<String> badges = null;
-
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("authToken", this.getAuthToken());
-    params.put("trackingCode", this.getTrackingCode());
-    params.put("visitorCode", this.getVisitorCode());
-
-    try {
-      JSONObject response = this.syncApiRequest("/api/visitor/badges", params);
-      JSONObject data = response.getJSONObject("data");
-      JSONArray badgesAsJsonArray = data.getJSONArray("badges");
-      badges = this.convertJsonArrayToArrayList(badgesAsJsonArray);
-    } catch (JSONException e) {
-      logError(e.getMessage());
+  public void badges(EightDigitsResultListener callback) {
+    if (!EightDigitsClient.authRequestSent) {
+      String errorMessage = "Please authenticate before calling badges method";
+      Integer errorCode = -1002;
+      callCallbackWithError(errorMessage, errorCode, callback);
+      logError(errorMessage);
+    } else {
+      Map<String, String> params = new HashMap<String, String>();
+      params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+      params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+      params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+      this.api("/api/visitor/badges", params, callback, EightDigitsApiRequestQueue.THIRD_PRIORITY);
     }
 
-    return badges;
   }
 
   /**
-   * End screen hit. You should call this method in onDestroy of activity. This
-   * method makes async request to api so does not return result. Auth token and
-   * hitCode should be created for using this method.
+   * End screen hit for current hit. You should call this method in onDestroy of
+   * activity. This method makes async request to api therefore does not return
+   * result.
    * 
-   * @param hitCode hitCode for activity which you get from newScreen or new
-   *          Visit method.
    */
-  public void endScreen(String hitCode) {
+  public void endScreen() {
     Map<String, String> params = new HashMap<String, String>();
-    params.put("authToken", this.getAuthToken());
-    params.put("trackingCode", this.getTrackingCode());
-    params.put("visitorCode", this.getVisitorCode());
-    params.put("sessionCode", this.getSessionCode());
-    params.put("hitCode", hitCode);
-    this.asyncApiRequest("/api/hit/end", params);
+
+    if (!EightDigitsClient.authRequestSent
+        || !EightDigitsClient.newHitRequestSent) {
+      String errorMessage = "Please authenticate and create hit before calling endScreen method";
+      logError(errorMessage);
+    } else {
+      params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+      params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+      params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+      params.put(Constants.SESSION_CODE, this.getSessionCode());
+      params.put(Constants.HIT_CODE, this.getHitCode());
+      this.api("/api/hit/end", params, null, EightDigitsApiRequestQueue.THIRD_PRIORITY);
+    }
   }
 
   /**
@@ -283,37 +305,30 @@ public class EightDigitsClient {
    * created for using this method.
    */
   public void endVisit() {
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("authToken", this.getAuthToken());
-    params.put("trackingCode", this.getTrackingCode());
-    params.put("visitorCode", this.getVisitorCode());
-    params.put("sessionCode", this.getSessionCode());
-    this.asyncApiRequest("/api/visit/end", params);
+    if (!EightDigitsClient.authRequestSent
+        || !EightDigitsClient.newHitRequestSent) {
+      String errorMessage = "Please authenticate and create hit before calling endVisit method";
+      logError(errorMessage);
+    } else {
+      Map<String, String> params = new HashMap<String, String>();
+      params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+      params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+      params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+      params.put(Constants.SESSION_CODE, this.getSessionCode());
+      this.api("/api/visit/end", params, null, EightDigitsApiRequestQueue.THIRD_PRIORITY);
+    }
   }
-  
+
   /**
    * Fills content of ImageView with badge image for given badge ID
    * 
-   * @param iv      ImageView object for displaying image
-   * @param badgeId Id of badge. You can find this ids in result of badges method.
+   * @param iv ImageView object for displaying image
+   * @param badgeId Id of badge. You can find this ids in result of badges
+   *          method.
    */
   public void badgeImage(ImageView iv, String badgeId) {
     String imageUrl = this.getUrlPrefix() + "/api/badge/image/" + badgeId;
     new DownloadImageTask(iv).execute(imageUrl);
-  }
-  
-  private void asyncApiRequest(String path, Map<String, String> params) {
-    try {
-      this.api(path, params, true);
-    } catch (EightDigitsApiException e) {
-      logError(e.getMessage());
-    }
-
-  }
-
-  private JSONObject syncApiRequest(String path, Map<String, String> params)
-      throws EightDigitsApiException {
-    return this.api(path, params, false);
   }
 
   /**
@@ -323,116 +338,13 @@ public class EightDigitsClient {
    * @param params Map of params
    * @return
    */
-  private JSONObject api(String path, Map<String, String> params,
-      boolean isAsyncRequest) throws EightDigitsApiException {
-    log("========================");
-    log(path);
-
-    this.resetRequestInfo(isAsyncRequest);
-
+  private void api(String path, Map<String, String> params,
+      EightDigitsResultListener callback, Integer priority) {
     String url = this.getUrlPrefix() + path;
-
-    boolean tryAgain = true;
-    JSONObject response = null;
-    int tryCount = 0;
-
-    while (tryAgain) {
-      
-      if(tryCount > 5)
-        throw new EightDigitsApiException(-503, "Error occured. Try Again");
-      
-      List<NameValuePair> pairs = this.generatePairsFromParams(params);
-
-      Runnable r = new EightDigitsApiRequest(url, pairs, isAsyncRequest,
-          this.getAsyncResultListener());
-      new Thread(r).start();
-
-      if (!isAsyncRequest) {
-        try {
-          while (!EightDigitsClient.BREAK_RESPONSE_LOOP) {
-            Thread.sleep(100);
-          }
-        } catch (InterruptedException e) {
-          throw new EightDigitsApiException(-503, "Error occured. Try Again");
-        }
-
-        if (EightDigitsClient.LAST_EXCEPTION != null) {
-          EightDigitsApiException lastException = EightDigitsClient.LAST_EXCEPTION;
-          throw lastException;
-        }
-
-        try {
-          response = this.parse(EightDigitsClient.LAST_API_RESPONSE);
-          tryAgain = false;
-        } catch (EightDigitsApiException e) {
-          if (e.getErrorCode() == -1) {
-            log(e.getMessage());
-            params.put("authToken", this.getAuthToken());
-            try {
-              Thread.sleep(100);
-            } catch (InterruptedException e2) {
-              logError(e2.getMessage());
-            }
-            tryCount++;
-          } else {
-            throw e;
-          }
-        }
-      } else {
-        tryAgain = false;
-      }
-    }
-    return response;
+    List<NameValuePair> pairs = this.generatePairsFromParams(params);
+    EightDigitsApiRequestQueue.push(url, pairs, callback, priority);
   }
 
-  private void resetRequestInfo(boolean isAsyncRequest) {
-
-    if (!isAsyncRequest) {
-      EightDigitsClient.LAST_EXCEPTION = null;
-      EightDigitsClient.BREAK_RESPONSE_LOOP = false;
-      EightDigitsClient.LAST_API_RESPONSE = "";
-    }
-  }
-
-  private JSONObject parse(String response) throws EightDigitsApiException {
-    JSONObject jsonObject = null;
-    try {
-
-      if (response.trim().length() == 0) {
-        throw new EightDigitsApiException(-504, "API returned empty result.");
-      }
-
-      jsonObject = new JSONObject(response);
-
-      if (jsonObject.getJSONObject("result").getInt("code") > 0) {
-        Integer code = jsonObject.getJSONObject("result").getInt("code");
-        String message = jsonObject.getJSONObject("result")
-            .getString("message");
-        throw new EightDigitsApiException(code, message);
-      } else if (jsonObject.getJSONObject("result").getInt("code") == -1) {
-        this.authWithUsername(this.getUsername(), this.getPassword());
-        throw new EightDigitsApiException(-501,
-            "Auth token is expired. Getting new one..");
-      }
-    } catch (JSONException e) {
-      throw new EightDigitsApiException(-502,
-          "Problem occured at JSON parsing.");
-    }
-    return jsonObject;
-  }
-
-  private List<String> convertJsonArrayToArrayList(JSONArray jsonArray) {
-    List<String> resultList = new ArrayList<String>();
-
-    try {
-      for (int i = 0; i < jsonArray.length(); i++) {
-        resultList.add(jsonArray.get(i).toString());
-      }
-    } catch (JSONException e) {
-      logError(e.getMessage());
-    }
-    return resultList;
-  }
 
   /**
    * Generates key-value pairs for Http Request entity
@@ -444,18 +356,50 @@ public class EightDigitsClient {
     List<NameValuePair> pairs = new ArrayList<NameValuePair>();
 
     for (Map.Entry<String, String> entry : params.entrySet()) {
-      log("Request Param = " + entry.getKey() + " = " + entry.getValue());
+      // log("Request Param = " + entry.getKey() + " = " + entry.getValue());
       pairs.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
     }
     return pairs;
   }
+
+  /**
+   * Calls callback with error info
+   * 
+   * @param errorMessage
+   * @param errorCode
+   * @param callback
+   */
+  private void callCallbackWithError(String errorMessage, Integer errorCode,
+      EightDigitsResultListener callback) {
+    JSONObject result = new JSONObject();
+    try {
+      result.put(Constants.ERROR, true);
+      result.put(Constants.ERROR_MESSAGE, errorMessage);
+      result.put(Constants.ERROR_CODE, errorCode);
+    } catch (JSONException e) {
+      log(e.getMessage());
+    }
+    callback.handleResult(result);
+  }
   
+  /**
+   * Creates new hit for activity at onResume event
+   * 
+   * @param title
+   * @param path
+   */
+  public void onRestart(String title, String path) {
+    this.setHitCode(null);
+    EightDigitsClient.setNewHitRequestSent(false);
+    this.newScreen(title, path);
+  }
+
   public static void logError(String message) {
-    Log.e(TAG, message);
+    Log.e(Constants.EIGHT_DIGITS_SDK, message);
   }
 
   public static void log(String message) {
-    Log.d(TAG, message);
+    Log.d(Constants.EIGHT_DIGITS_SDK, message);
   }
 
   public Activity getActivity() {
@@ -481,7 +425,7 @@ public class EightDigitsClient {
   public void setPassword(String password) {
     this.password = password;
   }
-  
+
   public String getAuthToken() {
     return authToken;
   }
@@ -522,13 +466,28 @@ public class EightDigitsClient {
     this.visitorCode = visitorCode;
   }
 
-  public EightDigitsAsyncResultListener getAsyncResultListener() {
-    return asyncResultListener;
+  public String getHitCode() {
+    return hitCode;
   }
 
-  public void setAsyncResultListener(
-      EightDigitsAsyncResultListener asyncResultListener) {
-    this.asyncResultListener = asyncResultListener;
+  public void setHitCode(String hitCode) {
+    this.hitCode = hitCode;
+  }
+  
+  public static Boolean getAuthRequestSent() {
+    return authRequestSent;
   }
 
+  public static void setAuthRequestSent(Boolean authRequestSent) {
+    EightDigitsClient.authRequestSent = authRequestSent;
+  }
+
+  public static Boolean getNewHitRequestSent() {
+    return newHitRequestSent;
+  }
+
+  public static void setNewHitRequestSent(Boolean newHitRequestSent) {
+    EightDigitsClient.newHitRequestSent = newHitRequestSent;
+  }
+  
 }
