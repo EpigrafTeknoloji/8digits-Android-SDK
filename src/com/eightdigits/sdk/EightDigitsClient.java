@@ -14,6 +14,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.eightdigits.sdk.exceptions.EightDigitsApiException;
+import com.eightdigits.sdk.utils.UniqIdentifier;
 
 import android.app.Activity;
 import android.util.DisplayMetrics;
@@ -55,9 +56,12 @@ public class EightDigitsClient {
       String trackingCode) {
     this.setUrlPrefix(urlPrefix);
     this.setTrackingCode(trackingCode);
-    this.setVisitorCode(UUID.randomUUID().toString());
+    
     this.setActivity(activity);
 
+    String visitorCode = UniqIdentifier.id(trackingCode, this.activity.getApplicationContext());
+    this.setVisitorCode(visitorCode);
+    
     Runnable apiRequestQueueRunnable = new EightDigitsApiRequestQueue(this);
     new Thread(apiRequestQueueRunnable).start();
 
@@ -352,7 +356,6 @@ public class EightDigitsClient {
     List<NameValuePair> pairs = new ArrayList<NameValuePair>();
 
     for (Map.Entry<String, String> entry : params.entrySet()) {
-      // log("Request Param = " + entry.getKey() + " = " + entry.getValue());
       pairs.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
     }
     return pairs;
