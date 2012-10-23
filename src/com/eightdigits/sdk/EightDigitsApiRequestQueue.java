@@ -118,6 +118,8 @@ public class EightDigitsApiRequestQueue implements Runnable {
   @SuppressWarnings("unchecked")
   public void api(Map<Object, Object> queueItem) throws EightDigitsApiException {
     String url = (String) queueItem.get(Constants.URL);
+    EightDigitsClient.log("URL : " + url);
+    
     List<NameValuePair> pairs = formatPairs((List<NameValuePair>) queueItem.get(Constants.PAIRS));
     EightDigitsResultListener callback = (EightDigitsResultListener) queueItem.get(Constants.CALLBACK);
     
@@ -129,7 +131,6 @@ public class EightDigitsApiRequestQueue implements Runnable {
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
       String response = client.execute(post, responseHandler);
       
-      EightDigitsClient.log("URL : " + url);
       EightDigitsClient.log("RESPONSE : " + response);
       
       if(callback != null) {

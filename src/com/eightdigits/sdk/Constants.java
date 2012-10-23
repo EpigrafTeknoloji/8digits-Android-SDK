@@ -31,5 +31,9 @@ public class Constants {
   public static final String PAIRS            = "pairs";
   public static final String CALLBACK         = "callback";
   public static final String PRIORITY         = "priority";
+  public static final String HTTP         = "http://";
+  public static final String BACKSLASH         = "/";
+  public static final String API         = "api";
+  
 
 }

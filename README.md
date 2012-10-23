@@ -9,7 +9,7 @@ You can add 8digits Android SDK to your project by adding 8digits-sdk.jar file t
 You should create new instance of client in your main activity.
 
 ```java
-this.eightDigitsClient = EightDigitsClient.createInstance(this, "<API_URL>", "<TRACKING_URL>");
+this.eightDigitsClient = EightDigitsClient.createInstance(this, "<API_URL>", "<TRACKING_CODE>");
 ```
 
 8Digits client is a singleton class, if you want to get instance of class in other activities, you should type code below in your activity's onCreate event.

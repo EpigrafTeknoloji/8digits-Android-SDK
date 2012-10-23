@@ -5,15 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.eightdigits.sdk.exceptions.EightDigitsApiException;
 import com.eightdigits.sdk.utils.UniqIdentifier;
 
 import android.app.Activity;
@@ -118,7 +115,7 @@ public class EightDigitsClient {
    * @return Returns hitCode for other events on screen.
    */
   public void newVisit(String title, String path) {
-    int systemVersion = android.os.Build.VERSION.SDK_INT;
+    // int systemVersion = android.os.Build.VERSION.SDK_INT;
     String model = "Linux";
     String userAgent = "Mozilla/5.0 (" + model + "; U; " + "Android "
         + android.os.Build.VERSION.RELEASE + "; " + android.os.Build.MODEL;
@@ -446,7 +443,7 @@ public class EightDigitsClient {
   }
 
   public void setUrlPrefix(String urlPrefix) {
-    this.urlPrefix = urlPrefix;
+    this.urlPrefix = formatUrlPrefix(urlPrefix);
   }
 
   public String getTrackingCode() {
@@ -487,6 +484,27 @@ public class EightDigitsClient {
 
   public static void setNewHitRequestSent(Boolean newHitRequestSent) {
     EightDigitsClient.newHitRequestSent = newHitRequestSent;
+  }
+  
+  /**
+   * Formats url
+   * 
+   * Remo
+   * 
+   * @param urlPrefix
+   * @return
+   */
+  private String formatUrlPrefix(String urlPrefix) {
+    if(!urlPrefix.startsWith(Constants.HTTP))
+      urlPrefix = Constants.HTTP + urlPrefix;
+    
+    if(urlPrefix.endsWith(Constants.BACKSLASH))
+      urlPrefix = urlPrefix.substring(0, urlPrefix.length() - 1);
+    
+    if(urlPrefix.endsWith(Constants.API))
+      urlPrefix = urlPrefix.substring(0, urlPrefix.length() - (Constants.API.length() + 1));
+     
+    return urlPrefix;
   }
 
 }
