@@ -77,7 +77,7 @@ public class EightDigitsClient {
     else if(application instanceof Context)
       this.setContext((Context) context);
 
-    String visitorCode = UniqIdentifier.id(trackingCode, this.activity.getApplicationContext());
+    String visitorCode = UniqIdentifier.id(trackingCode, this.activity != null ? this.activity.getApplicationContext() : this.getContext());
     this.setVisitorCode(visitorCode);
     
     Runnable apiRequestQueueRunnable = new EightDigitsApiRequestQueue(this);
