@@ -75,7 +75,7 @@ public class EightDigitsClient {
     if(application instanceof Activity)
       this.setActivity((Activity) application);
     else if(application instanceof Context)
-      this.setContext((Context) context);
+      this.setContext((Context) application);
 
     String visitorCode = UniqIdentifier.id(trackingCode, this.getActivity() != null ? this.getActivity().getApplicationContext() : this.getContext());
     this.setVisitorCode(visitorCode);
