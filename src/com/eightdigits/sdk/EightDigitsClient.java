@@ -14,13 +14,17 @@ import org.json.JSONObject;
 import com.eightdigits.sdk.utils.UniqIdentifier;
 
 import android.app.Activity;
+import android.content.Context;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 public class EightDigitsClient {
 
   private Activity                activity;
+  private Context                 context;
   private String                  urlPrefix;
   private String                  trackingCode;
   private String                  visitorCode;
@@ -41,27 +45,43 @@ public class EightDigitsClient {
   }
 
   public static synchronized EightDigitsClient createInstance(
-      Activity activity, String urlPrefix, String trackingCode) {
-
-    if (instance == null)
-      instance = new EightDigitsClient(activity, urlPrefix, trackingCode);
+      Object application, String urlPrefix, String trackingCode) {
+    
+    Activity activity = null;
+    Context context = null;
+    
+    if(application instanceof Activity) {
+      activity = (Activity) application;
+    } else if(application instanceof Context) {
+      context = (Context) application;
+    }
+      
+    if (instance == null) {
+      if(activity != null)
+        instance = new EightDigitsClient(activity, urlPrefix, trackingCode);
+      else if (context != null)
+        instance = new EightDigitsClient(context, urlPrefix, trackingCode);
+    }
+      
 
     return instance;
   }
 
-  private EightDigitsClient(Activity activity, String urlPrefix,
+  private EightDigitsClient(Object application, String urlPrefix,
       String trackingCode) {
     this.setUrlPrefix(urlPrefix);
     this.setTrackingCode(trackingCode);
     
-    this.setActivity(activity);
+    if(application instanceof Activity)
+      this.setActivity((Activity) application);
+    else if(application instanceof Context)
+      this.setContext((Context) context);
 
     String visitorCode = UniqIdentifier.id(trackingCode, this.activity.getApplicationContext());
     this.setVisitorCode(visitorCode);
     
     Runnable apiRequestQueueRunnable = new EightDigitsApiRequestQueue(this);
     new Thread(apiRequestQueueRunnable).start();
-
   }
 
   /**
@@ -125,11 +145,22 @@ public class EightDigitsClient {
      */
 
     userAgent += " like Mac OS X; en-us) AppleWebKit (KHTML, like Gecko) Mobile/8A293 Safari";
-
-    DisplayMetrics metrics = new DisplayMetrics();
-    activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-    int width = metrics.widthPixels;
-    int height = metrics.heightPixels;
+    
+    int width = 0;
+    int height = 0;
+    
+    if(this.getActivity() != null) {
+      DisplayMetrics metrics = new DisplayMetrics();
+      activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+      width = metrics.widthPixels;
+      height = metrics.heightPixels;
+    } else if(this.getContext() != null) {
+      WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+      Display d = wm.getDefaultDisplay();
+      width = d.getWidth();
+      height = d.getHeight();
+    }
+    
     String language = Locale.getDefault().getDisplayLanguage();
 
     Map<String, String> params = new HashMap<String, String>();
@@ -484,6 +515,14 @@ public class EightDigitsClient {
 
   public static void setNewHitRequestSent(Boolean newHitRequestSent) {
     EightDigitsClient.newHitRequestSent = newHitRequestSent;
+  }
+  
+  public Context getContext() {
+    return context;
+  }
+
+  public void setContext(Context context) {
+    this.context = context;
   }
   
   /**
