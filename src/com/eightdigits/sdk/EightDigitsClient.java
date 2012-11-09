@@ -33,7 +33,7 @@ public class EightDigitsClient {
   private String                  hitCode;
   private String                  username;
   private String                  password;
-
+  
   private static Boolean          authRequestSent   = false;
   private static Boolean          newHitRequestSent = false;
   public static EightDigitsClient instance          = null;
@@ -135,16 +135,9 @@ public class EightDigitsClient {
    * @return Returns hitCode for other events on screen.
    */
   public void newVisit(String title, String path) {
-    // int systemVersion = android.os.Build.VERSION.SDK_INT;
-    String model = "Linux";
-    String userAgent = "Mozilla/5.0 (" + model + "; U; " + "Android "
-        + android.os.Build.VERSION.RELEASE + "; " + android.os.Build.MODEL;
-
-    /*
-     * if (systemVersion >= 10) { userAgent += " " + android.os.Build.SERIAL; }
-     */
-
-    userAgent += " like Mac OS X; en-us) AppleWebKit (KHTML, like Gecko) Mobile/8A293 Safari";
+    // User Agent : Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30
+    String userAgent = "Mozilla/5.0 (Linux; U; Android " + android.os.Build.VERSION.RELEASE + "; ko-kr; "+ android.os.Build.BRAND +"-"+ android.os.Build.MODEL +") " + 
+                       "AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30";
     
     int width = 0;
     int height = 0;
@@ -176,9 +169,8 @@ public class EightDigitsClient {
     params.put(Constants.FLASH_VERSION, "0.0.0");
     params.put(Constants.JAVA_ENABLED, "false");
     params.put(Constants.USER_AGENT, userAgent);
-    params.put(Constants.DEVICE, android.os.Build.MANUFACTURER);
     params.put(Constants.VENDOR, android.os.Build.BRAND);
-    params.put(Constants.MODEL, android.os.Build.MODEL);
+    params.put(Constants.BRAND, android.os.Build.MODEL);
 
     EightDigitsResultListener callback = new EightDigitsResultListener() {
       @Override
@@ -190,6 +182,7 @@ public class EightDigitsClient {
           data = result.getJSONObject(Constants.DATA);
           instance.setHitCode(data.getString(Constants.HIT_CODE));
           instance.setSessionCode(data.getString(Constants.SESSION_CODE));
+          
         } catch (JSONException e) {
           Log.e(Constants.EIGHT_DIGITS_SDK, e.getMessage());
         }
@@ -210,6 +203,7 @@ public class EightDigitsClient {
    * @return
    */
   public void newScreen(String title, String path) {
+    this.endScreen();
     Map<String, String> params = new HashMap<String, String>();
     params.put(Constants.AUTH_TOKEN, this.getAuthToken());
     params.put(Constants.TRACKING_CODE, this.getTrackingCode());
@@ -314,17 +308,19 @@ public class EightDigitsClient {
   public void endScreen() {
     Map<String, String> params = new HashMap<String, String>();
 
-    if (!EightDigitsClient.authRequestSent
-        || !EightDigitsClient.newHitRequestSent) {
+    if (!EightDigitsClient.authRequestSent) {
       String errorMessage = "Please authenticate and create hit before calling endScreen method";
       logError(errorMessage);
     } else {
-      params.put(Constants.AUTH_TOKEN, this.getAuthToken());
-      params.put(Constants.TRACKING_CODE, this.getTrackingCode());
-      params.put(Constants.VISITOR_CODE, this.getVisitorCode());
-      params.put(Constants.SESSION_CODE, this.getSessionCode());
-      params.put(Constants.HIT_CODE, this.getHitCode());
-      this.api("/api/hit/end", params, null, EightDigitsApiRequestQueue.THIRD_PRIORITY);
+      String hitCode = this.getHitCode();
+      if(hitCode != null) {
+        params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+        params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+        params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+        params.put(Constants.SESSION_CODE, this.getSessionCode());
+        params.put(Constants.HIT_CODE, hitCode);
+        this.api("/api/hit/end", params, null, EightDigitsApiRequestQueue.SECOND_PRIORITY);
+      }
     }
   }
 
@@ -493,11 +489,11 @@ public class EightDigitsClient {
     this.visitorCode = visitorCode;
   }
 
-  public String getHitCode() {
+  public synchronized String getHitCode() {
     return hitCode;
   }
 
-  public void setHitCode(String hitCode) {
+  public synchronized void setHitCode(String hitCode) {
     this.hitCode = hitCode;
   }
 

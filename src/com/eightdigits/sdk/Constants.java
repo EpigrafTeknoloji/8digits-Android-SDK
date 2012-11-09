@@ -21,6 +21,7 @@ public class Constants {
   public static final String DEVICE           = "device";
   public static final String VENDOR           = "vendor";
   public static final String MODEL            = "model";
+  public static final String BRAND            = "brand";
   public static final String SESSION_CODE     = "sessionCode";
   public static final String KEY              = "key";
   public static final String VALUE            = "value";
@@ -34,6 +35,7 @@ public class Constants {
   public static final String HTTP         = "http://";
   public static final String BACKSLASH         = "/";
   public static final String API         = "api";
+  public static final String EIGHTDIGITS_SDK_VERSION = "eightdigitsSdkVersion";
   
 
 }

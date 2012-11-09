@@ -171,6 +171,9 @@ public class EightDigitsApiRequestQueue implements Runnable {
       newPairs.add(newPair);
     }
     
+    // Add SDK Version
+    newPairs.add(new BasicNameValuePair(Constants.EIGHTDIGITS_SDK_VERSION, "3.0"));
+    
     return newPairs;
   }
   
