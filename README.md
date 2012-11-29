@@ -93,6 +93,13 @@ You should end user visit. You should call this method only in your main activit
 this.eightDigitsClient.endVisit();
 ```
 
+### Configuring Logging
+If you want to disable logging for EightDigitsClient class you can call ``setLoggingEnabled`` method. To disable logging, after creating an instance of EightDigitsClient class, you should call method as shown below.
+```java
+this.eightDigitsClient.setLoggingEnabled(false)
+```
+Default value of logging is true which means every http request to 8digits API servers will be logged to LogCat. We suggest disabling logging when you release your application to market because of security reasons.
+
 ### Author
 
 Gurkan Oluc (@grkn) <gurkan@8digits.com>

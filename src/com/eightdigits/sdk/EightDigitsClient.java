@@ -33,6 +33,7 @@ public class EightDigitsClient {
   private String                  hitCode;
   private String                  username;
   private String                  password;
+  private Boolean                 loggingEnabled = true;
   
   private static Boolean          authRequestSent   = false;
   private static Boolean          newHitRequestSent = false;
@@ -418,11 +419,20 @@ public class EightDigitsClient {
   }
 
   public static void logError(String message) {
-    Log.e(Constants.EIGHT_DIGITS_SDK, message);
+    EightDigitsClient instance = EightDigitsClient.getInstance();
+    
+    if(instance != null && instance.getLoggingEnabled()) {
+      Log.e(Constants.EIGHT_DIGITS_SDK, message);
+    }
+    
   }
 
   public static void log(String message) {
-    Log.d(Constants.EIGHT_DIGITS_SDK, message);
+    EightDigitsClient instance = EightDigitsClient.getInstance();
+    
+    if(instance != null && instance.getLoggingEnabled()) {
+      Log.d(Constants.EIGHT_DIGITS_SDK, message);
+    }
   }
 
   public Activity getActivity() {
@@ -519,6 +529,14 @@ public class EightDigitsClient {
 
   public void setContext(Context context) {
     this.context = context;
+  }
+  
+  public void setLoggingEnabled(Boolean loggingEnabled) {
+    this.loggingEnabled = loggingEnabled;
+  }
+  
+  public Boolean getLoggingEnabled() {
+    return this.loggingEnabled;
   }
   
   /**

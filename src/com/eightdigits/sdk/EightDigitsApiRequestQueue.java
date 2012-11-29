@@ -96,19 +96,34 @@ public class EightDigitsApiRequestQueue implements Runnable {
     Map queueItem = null;
     
     if (queue.size() > 0) {
-      
-      while (true) {
-        queueItem = queue.peek();
+      Boolean breakLoop = false;
+      while (!breakLoop) {
+        queueItem = queue.poll();
         
         if(queueItem == null)
           break;
         
-        try {
-          api(queueItem);
-          queue.poll();
-        } catch (EightDigitsApiException e) {
-          if(e.getErrorCode() == -501) {
-            EightDigitsClient.getInstance().reAuth();
+        byte tryCount = 1;
+        
+        while(tryCount <= 5) {
+          EightDigitsClient.log("Try count = " + new Byte(tryCount).toString());
+          try {
+            api(queueItem);
+            break;
+          } catch (EightDigitsApiException e) {
+            // If token is expired we are sending new auth request
+            if(e.getErrorCode() == -501) {
+                EightDigitsClient.getInstance().reAuth();
+                breakLoop = true;
+            } else {
+              tryCount++;
+            }
+            
+            EightDigitsClient.logError(e.getMessage());
+            
+          } catch (Exception e) {
+            EightDigitsClient.logError(e.getMessage());
+            tryCount++;
           }
         }
       }
@@ -116,14 +131,13 @@ public class EightDigitsApiRequestQueue implements Runnable {
   }
   
   @SuppressWarnings("unchecked")
-  public void api(Map<Object, Object> queueItem) throws EightDigitsApiException {
+  public void api(Map<Object, Object> queueItem) throws EightDigitsApiException, ClientProtocolException, IOException, UnsupportedEncodingException {
     String url = (String) queueItem.get(Constants.URL);
     EightDigitsClient.log("URL : " + url);
     
     List<NameValuePair> pairs = formatPairs((List<NameValuePair>) queueItem.get(Constants.PAIRS));
     EightDigitsResultListener callback = (EightDigitsResultListener) queueItem.get(Constants.CALLBACK);
     
-    try {
       HttpClient client = new DefaultHttpClient();  
       HttpPost post = new HttpPost(url);
       post.setEntity(new UrlEncodedFormEntity(pairs));
@@ -140,13 +154,7 @@ public class EightDigitsApiRequestQueue implements Runnable {
       
       client.getConnectionManager().closeExpiredConnections();
       
-    } catch (UnsupportedEncodingException e) {
-      EightDigitsClient.logError(e.getMessage());
-    } catch (ClientProtocolException e) {
-      EightDigitsClient.logError(e.getMessage());
-    } catch (IOException e) {
-      EightDigitsClient.logError(e.getMessage());
-    }
+    
     EightDigitsClient.log("-----------------------------------------");
   }
   
@@ -199,7 +207,7 @@ public class EightDigitsApiRequestQueue implements Runnable {
 
       jsonObject = new JSONObject(response);
 
-      if (jsonObject.getJSONObject("result").getInt("code") > 0) {
+      if (jsonObject.getJSONObject("result").getInt("code") != 0) {
         Integer code = jsonObject.getJSONObject("result").getInt("code");
         String message = jsonObject.getJSONObject("result").getString("message");
         throw new EightDigitsApiException(code, message);
