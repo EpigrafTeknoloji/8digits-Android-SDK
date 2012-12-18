@@ -206,13 +206,15 @@ public class EightDigitsApiRequestQueue implements Runnable {
       }
 
       jsonObject = new JSONObject(response);
-
-      if (jsonObject.getJSONObject("result").getInt("code") != 0) {
-        Integer code = jsonObject.getJSONObject("result").getInt("code");
-        String message = jsonObject.getJSONObject("result").getString("message");
-        throw new EightDigitsApiException(code, message);
-      } else if (jsonObject.getJSONObject("result").getInt("code") == -1) {
-        throw new EightDigitsApiException(-501, "Auth token is expired. Getting new one..");
+      int errorCode = jsonObject.getJSONObject("result").getInt("code");
+      
+      if(errorCode != 0) {
+        if(errorCode == -1) {
+          throw new EightDigitsApiException(-501, "Auth token is expired. Getting new one..");
+        } else {
+          String message = jsonObject.getJSONObject("result").getString("message");
+          throw new EightDigitsApiException(errorCode, message);
+        }
       }
     } catch (JSONException e) {
       throw new EightDigitsApiException(-502, "Problem occured at JSON parsing.");

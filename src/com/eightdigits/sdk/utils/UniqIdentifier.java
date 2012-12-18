@@ -14,6 +14,7 @@ public class UniqIdentifier {
 
   public synchronized static String id(String trackingCode, Context context) {
       if (sID == null) {  
+          System.out.println("file creating");
           File installation = new File(context.getFilesDir(), INSTALLATION + "-" + trackingCode);
           try {
               if (!installation.exists())
@@ -22,6 +23,8 @@ public class UniqIdentifier {
           } catch (Exception e) {
               throw new RuntimeException(e);
           }
+      } else {
+        System.out.println("file exists");
       }
       return sID;
   }

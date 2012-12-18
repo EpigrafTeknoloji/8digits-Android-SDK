@@ -413,7 +413,6 @@ public class EightDigitsClient {
    * @param path
    */
   public void onRestart(String title, String path) {
-    this.setHitCode(null);
     EightDigitsClient.setNewHitRequestSent(false);
     this.newScreen(title, path);
   }
