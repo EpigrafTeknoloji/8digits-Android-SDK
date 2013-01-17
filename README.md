@@ -93,6 +93,14 @@ You should end user visit. You should call this method only in your main activit
 this.eightDigitsClient.endVisit();
 ```
 
+### Setting Visitor Attiribute And Avatar
+To set attribute of visitor, you should use ```setVisitorAttribute``` method, to set avatar of visitor you should use ```setVisitorAvatar``` method.
+
+```java
+this.eightDigitsClient.setVisitorAttribute("fullName", "Foo Bar");
+this.eightDigitsClient.setVisitorAvatar("http://foo.com/images/bar.jpg");
+```
+
 ### Configuring Logging
 If you want to disable logging for EightDigitsClient class you can call ``setLoggingEnabled`` method. To disable logging, after creating an instance of EightDigitsClient class, you should call method as shown below.
 ```java

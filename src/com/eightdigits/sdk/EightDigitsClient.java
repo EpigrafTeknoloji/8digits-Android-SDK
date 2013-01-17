@@ -11,8 +11,6 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.eightdigits.sdk.utils.UniqIdentifier;
-
 import android.app.Activity;
 import android.content.Context;
 import android.util.DisplayMetrics;
@@ -20,6 +18,8 @@ import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 import android.widget.ImageView;
+
+import com.eightdigits.sdk.utils.UniqIdentifier;
 
 public class EightDigitsClient {
 
@@ -33,8 +33,8 @@ public class EightDigitsClient {
   private String                  hitCode;
   private String                  username;
   private String                  password;
-  private Boolean                 loggingEnabled = true;
-  
+  private Boolean                 loggingEnabled    = true;
+
   private static Boolean          authRequestSent   = false;
   private static Boolean          newHitRequestSent = false;
   public static EightDigitsClient instance          = null;
@@ -47,23 +47,22 @@ public class EightDigitsClient {
 
   public static synchronized EightDigitsClient createInstance(
       Object application, String urlPrefix, String trackingCode) {
-    
+
     Activity activity = null;
     Context context = null;
-    
-    if(application instanceof Activity) {
+
+    if (application instanceof Activity) {
       activity = (Activity) application;
-    } else if(application instanceof Context) {
+    } else if (application instanceof Context) {
       context = (Context) application;
     }
-      
+
     if (instance == null) {
-      if(activity != null)
+      if (activity != null)
         instance = new EightDigitsClient(activity, urlPrefix, trackingCode);
       else if (context != null)
         instance = new EightDigitsClient(context, urlPrefix, trackingCode);
     }
-      
 
     return instance;
   }
@@ -72,15 +71,16 @@ public class EightDigitsClient {
       String trackingCode) {
     this.setUrlPrefix(urlPrefix);
     this.setTrackingCode(trackingCode);
-    
-    if(application instanceof Activity)
+
+    if (application instanceof Activity)
       this.setActivity((Activity) application);
-    else if(application instanceof Context)
+    else if (application instanceof Context)
       this.setContext((Context) application);
 
-    String visitorCode = UniqIdentifier.id(trackingCode, this.getActivity() != null ? this.getActivity().getApplicationContext() : this.getContext());
+    String visitorCode = UniqIdentifier.id(trackingCode, this.getActivity() != null ? this.getActivity().getApplicationContext()
+        : this.getContext());
     this.setVisitorCode(visitorCode);
-    
+
     Runnable apiRequestQueueRunnable = new EightDigitsApiRequestQueue(this);
     new Thread(apiRequestQueueRunnable).start();
   }
@@ -136,25 +136,33 @@ public class EightDigitsClient {
    * @return Returns hitCode for other events on screen.
    */
   public void newVisit(String title, String path) {
-    // User Agent : Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30
-    String userAgent = "Mozilla/5.0 (Linux; U; Android " + android.os.Build.VERSION.RELEASE + "; ko-kr; "+ android.os.Build.BRAND +"-"+ android.os.Build.MODEL +") " + 
-                       "AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30";
-    
+    // User Agent : Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L
+    // Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile
+    // Safari/534.30
+    String userAgent = "Mozilla/5.0 (Linux; U; Android "
+        + android.os.Build.VERSION.RELEASE
+        + "; ko-kr; "
+        + android.os.Build.BRAND
+        + "-"
+        + android.os.Build.MODEL
+        + ") "
+        + "AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30";
+
     int width = 0;
     int height = 0;
-    
-    if(this.getActivity() != null) {
+
+    if (this.getActivity() != null) {
       DisplayMetrics metrics = new DisplayMetrics();
       activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
       width = metrics.widthPixels;
       height = metrics.heightPixels;
-    } else if(this.getContext() != null) {
+    } else if (this.getContext() != null) {
       WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
       Display d = wm.getDefaultDisplay();
       width = d.getWidth();
       height = d.getHeight();
     }
-    
+
     String language = Locale.getDefault().getDisplayLanguage();
 
     Map<String, String> params = new HashMap<String, String>();
@@ -183,7 +191,7 @@ public class EightDigitsClient {
           data = result.getJSONObject(Constants.DATA);
           instance.setHitCode(data.getString(Constants.HIT_CODE));
           instance.setSessionCode(data.getString(Constants.SESSION_CODE));
-          
+
         } catch (JSONException e) {
           Log.e(Constants.EIGHT_DIGITS_SDK, e.getMessage());
         }
@@ -314,7 +322,7 @@ public class EightDigitsClient {
       logError(errorMessage);
     } else {
       String hitCode = this.getHitCode();
-      if(hitCode != null) {
+      if (hitCode != null) {
         params.put(Constants.AUTH_TOKEN, this.getAuthToken());
         params.put(Constants.TRACKING_CODE, this.getTrackingCode());
         params.put(Constants.VISITOR_CODE, this.getVisitorCode());
@@ -357,6 +365,33 @@ public class EightDigitsClient {
     new DownloadImageTask(iv).execute(imageUrl);
   }
 
+  /**
+   * Sets attribute of visitor
+   * 
+   * @param key
+   * @param value
+   */
+  public void setVisitorAttribute(String key, String value) {
+    Map<String, String> params = new HashMap<String, String>();
+    params.put(Constants.KEY, key);
+    params.put(Constants.VALUE, value);
+    params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+    params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+    params.put(Constants.VISITOR_CODE, this.getVisitorCode());
+    params.put(Constants.SESSION_CODE, this.getSessionCode());
+    this.api("/api/visitor/setAttribute", params, null, EightDigitsApiRequestQueue.THIRD_PRIORITY);
+  }
+  
+  /**
+   * Sets avatar of visitor
+   * 
+   * @param value
+   */
+  public void setVisitorAvatar(String value) {
+    this.setVisitorAttribute("avatarPath", value);
+  }
+  
+  
   /**
    * Main API request method
    * 
@@ -419,17 +454,17 @@ public class EightDigitsClient {
 
   public static void logError(String message) {
     EightDigitsClient instance = EightDigitsClient.getInstance();
-    
-    if(instance != null && instance.getLoggingEnabled()) {
+
+    if (instance != null && instance.getLoggingEnabled()) {
       Log.e(Constants.EIGHT_DIGITS_SDK, message);
     }
-    
+
   }
 
   public static void log(String message) {
     EightDigitsClient instance = EightDigitsClient.getInstance();
-    
-    if(instance != null && instance.getLoggingEnabled()) {
+
+    if (instance != null && instance.getLoggingEnabled()) {
       Log.d(Constants.EIGHT_DIGITS_SDK, message);
     }
   }
@@ -521,7 +556,7 @@ public class EightDigitsClient {
   public static void setNewHitRequestSent(Boolean newHitRequestSent) {
     EightDigitsClient.newHitRequestSent = newHitRequestSent;
   }
-  
+
   public Context getContext() {
     return context;
   }
@@ -529,15 +564,15 @@ public class EightDigitsClient {
   public void setContext(Context context) {
     this.context = context;
   }
-  
+
   public void setLoggingEnabled(Boolean loggingEnabled) {
     this.loggingEnabled = loggingEnabled;
   }
-  
+
   public Boolean getLoggingEnabled() {
     return this.loggingEnabled;
   }
-  
+
   /**
    * Formats url
    * 
@@ -547,15 +582,16 @@ public class EightDigitsClient {
    * @return
    */
   private String formatUrlPrefix(String urlPrefix) {
-    if(!urlPrefix.startsWith(Constants.HTTP))
+    if (!urlPrefix.startsWith(Constants.HTTP))
       urlPrefix = Constants.HTTP + urlPrefix;
-    
-    if(urlPrefix.endsWith(Constants.BACKSLASH))
+
+    if (urlPrefix.endsWith(Constants.BACKSLASH))
       urlPrefix = urlPrefix.substring(0, urlPrefix.length() - 1);
-    
-    if(urlPrefix.endsWith(Constants.API))
-      urlPrefix = urlPrefix.substring(0, urlPrefix.length() - (Constants.API.length() + 1));
-     
+
+    if (urlPrefix.endsWith(Constants.API))
+      urlPrefix = urlPrefix.substring(0, urlPrefix.length()
+          - (Constants.API.length() + 1));
+
     return urlPrefix;
   }
 

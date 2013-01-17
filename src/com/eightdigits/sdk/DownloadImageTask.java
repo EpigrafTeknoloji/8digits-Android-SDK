@@ -8,18 +8,18 @@ import android.os.AsyncTask;
 import android.widget.ImageView;
 
 public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
-  
+
   private ImageView imageView;
-  
+
   public DownloadImageTask(ImageView iv) {
     this.imageView = iv;
   }
-  
+
   @Override
   protected Bitmap doInBackground(String... params) {
     String imageUrl = params[0];
     Bitmap decodedBitmap = null;
-    
+
     try {
       InputStream in = new java.net.URL(imageUrl).openStream();
       decodedBitmap = BitmapFactory.decodeStream(in);
@@ -28,15 +28,14 @@ public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
     }
     return decodedBitmap;
   }
-  
+
   @Override
   protected void onPostExecute(Bitmap result) {
-    
-    if(this.imageView == null)
+
+    if (this.imageView == null)
       return;
-    
+
     this.imageView.setImageBitmap(result);
   }
-  
 
 }
