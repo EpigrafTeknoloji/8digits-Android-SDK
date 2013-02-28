@@ -34,6 +34,9 @@ After creating your session (Creating auth token), you should call newVisit meth
 this.eightDigitsClient.newVisit("<Title of Visit>", "<Path>");
 ```
 
+### Setting Location Of Visit
+Before calling newVisit method, you should call ```setLocation("<Latitude>", "<Longtitude>")``` method to set location of visitor.
+
 ### Creating New Hit
 If you want to create new hitCode you can call ```newScreen``` method of client.
 

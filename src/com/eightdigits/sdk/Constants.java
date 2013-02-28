@@ -36,6 +36,8 @@ public class Constants {
   public static final String BACKSLASH         = "/";
   public static final String API         = "api";
   public static final String EIGHTDIGITS_SDK_VERSION = "eightdigitsSdkVersion";
+  public static final String LONGITUDE = "longitude";
+  public static final String LATITUDE = "latitude";
   
 
 }

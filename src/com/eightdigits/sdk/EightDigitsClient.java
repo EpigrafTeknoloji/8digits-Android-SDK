@@ -34,7 +34,8 @@ public class EightDigitsClient {
   private String                  username;
   private String                  password;
   private Boolean                 loggingEnabled    = true;
-
+  private String                  longitude = null;
+  private String                  latitude = null;
   private static Boolean          authRequestSent   = false;
   private static Boolean          newHitRequestSent = false;
   public static EightDigitsClient instance          = null;
@@ -136,9 +137,6 @@ public class EightDigitsClient {
    * @return Returns hitCode for other events on screen.
    */
   public void newVisit(String title, String path) {
-    // User Agent : Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L
-    // Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile
-    // Safari/534.30
     String userAgent = "Mozilla/5.0 (Linux; U; Android "
         + android.os.Build.VERSION.RELEASE
         + "; ko-kr; "
@@ -180,7 +178,12 @@ public class EightDigitsClient {
     params.put(Constants.USER_AGENT, userAgent);
     params.put(Constants.VENDOR, android.os.Build.BRAND);
     params.put(Constants.BRAND, android.os.Build.MODEL);
-
+    
+    if(this.getLatitude() != null && this.getLongitude() != null) {
+      params.put(Constants.LATITUDE, this.getLatitude());
+      params.put(Constants.LONGITUDE, this.getLongitude());
+    }
+    
     EightDigitsResultListener callback = new EightDigitsResultListener() {
       @Override
       public void handleResult(JSONObject result) {
@@ -594,5 +597,25 @@ public class EightDigitsClient {
 
     return urlPrefix;
   }
+  
+  public String getLongitude() {
+    return longitude;
+  }
+  
+  public String getLatitude() {
+    return latitude;
+  }
 
+  /**
+   * 
+   * @param latitude
+   * @param longitude
+   */
+  public void setLocation(String latitude, String longitude) {
+    this.longitude = longitude;
+    this.latitude = latitude;
+  }
+
+  
+  
 }
