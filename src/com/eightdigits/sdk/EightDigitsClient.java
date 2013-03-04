@@ -23,22 +23,21 @@ import com.eightdigits.sdk.utils.UniqIdentifier;
 
 public class EightDigitsClient {
 
-  private Activity                activity;
-  private Context                 context;
-  private String                  urlPrefix;
-  private String                  trackingCode;
-  private String                  visitorCode;
-  private String                  authToken;
-  private String                  sessionCode;
-  private String                  hitCode;
-  private String                  username;
-  private String                  password;
-  private Boolean                 loggingEnabled    = true;
-  private String                  longitude = null;
-  private String                  latitude = null;
-  private static Boolean          authRequestSent   = false;
-  private static Boolean          newHitRequestSent = false;
-  public static EightDigitsClient instance          = null;
+  private Activity activity;
+  private Context context;
+  private String urlPrefix;
+  private String trackingCode;
+  private String visitorCode;
+  private String authToken;
+  private String sessionCode;
+  private String hitCode;
+  private String apiKey;
+  private Boolean loggingEnabled = true;
+  private String longitude = null;
+  private String latitude = null;
+  private static Boolean authRequestSent = false;
+  private static Boolean newHitRequestSent = false;
+  public static EightDigitsClient instance = null;
 
   public static synchronized EightDigitsClient getInstance() {
     if (instance != null)
@@ -94,14 +93,13 @@ public class EightDigitsClient {
    * @param password Your 8digits password
    * @return
    */
-  public void authWithUsername(String username, String password) {
-
-    this.setUsername(username);
-    this.setPassword(password);
-
-    Map<String, String> params = new HashMap<String, String>(2);
-    params.put(Constants.USERNAME, this.getUsername());
-    params.put(Constants.PASSWORD, this.getPassword());
+  public void auth(String apiKey) {
+    if(this.getApiKey() == null) {
+      this.setApiKey(apiKey);
+    }
+    
+    Map<String, String> params = new HashMap<String, String>(1);
+    params.put(Constants.API_KEY, this.getApiKey());
 
     EightDigitsResultListener callback = new EightDigitsResultListener() {
       @Override
@@ -123,7 +121,7 @@ public class EightDigitsClient {
    * Calls authWithUsername method with existing username and password values
    */
   public void reAuth() {
-    this.authWithUsername(this.getUsername(), this.getPassword());
+    this.auth(this.getApiKey());
   }
 
   /**
@@ -178,12 +176,12 @@ public class EightDigitsClient {
     params.put(Constants.USER_AGENT, userAgent);
     params.put(Constants.VENDOR, android.os.Build.BRAND);
     params.put(Constants.BRAND, android.os.Build.MODEL);
-    
-    if(this.getLatitude() != null && this.getLongitude() != null) {
+
+    if (this.getLatitude() != null && this.getLongitude() != null) {
       params.put(Constants.LATITUDE, this.getLatitude());
       params.put(Constants.LONGITUDE, this.getLongitude());
     }
-    
+
     EightDigitsResultListener callback = new EightDigitsResultListener() {
       @Override
       public void handleResult(JSONObject result) {
@@ -384,16 +382,23 @@ public class EightDigitsClient {
     params.put(Constants.SESSION_CODE, this.getSessionCode());
     this.api("/api/visitor/setAttribute", params, null, EightDigitsApiRequestQueue.THIRD_PRIORITY);
   }
-  
+
   /**
    * Sets avatar of visitor
    * 
    * @param value
    */
   public void setVisitorAvatar(String value) {
-    this.setVisitorAttribute("avatarPath", value);
+    this.setVisitorAttribute(Constants.AVATAR_PATH, value);
   }
-  
+
+  /**
+   * 
+   * @param value
+   */
+  public void setVisitorGSM(String value) {
+    this.setVisitorAttribute(Constants.GSM, value);
+  }
   
   /**
    * Main API request method
@@ -479,23 +484,7 @@ public class EightDigitsClient {
   public void setActivity(Activity activity) {
     this.activity = activity;
   }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
-  }
-
+  
   public String getAuthToken() {
     return authToken;
   }
@@ -576,6 +565,15 @@ public class EightDigitsClient {
     return this.loggingEnabled;
   }
 
+  public String getApiKey() {
+    return apiKey;
+  }
+
+  public void setApiKey(String apiKey) {
+    this.apiKey = apiKey;
+  }
+  
+  
   /**
    * Formats url
    * 
@@ -597,11 +595,11 @@ public class EightDigitsClient {
 
     return urlPrefix;
   }
-  
+
   public String getLongitude() {
     return longitude;
   }
-  
+
   public String getLatitude() {
     return latitude;
   }
@@ -616,6 +614,4 @@ public class EightDigitsClient {
     this.latitude = latitude;
   }
 
-  
-  
 }
