@@ -27,15 +27,15 @@ import com.eightdigits.sdk.exceptions.EightDigitsApiException;
 @SuppressWarnings("unused")
 public class EightDigitsApiRequestQueue implements Runnable {
 
-  private EightDigitsClient                               clientInstance;
+  private EightDigitsClient clientInstance;
 
-  public static Integer                                   FIRST_PRIORITY      = 1;
-  public static Integer                                   SECOND_PRIORITY     = 2;
-  public static Integer                                   THIRD_PRIORITY      = 3;
+  public static Integer FIRST_PRIORITY = 1;
+  public static Integer SECOND_PRIORITY = 2;
+  public static Integer THIRD_PRIORITY = 3;
 
-  private static final BlockingQueue<Map<Object, Object>> firstPriorityQueue  = new LinkedBlockingQueue<Map<Object, Object>>();
+  private static final BlockingQueue<Map<Object, Object>> firstPriorityQueue = new LinkedBlockingQueue<Map<Object, Object>>();
   private static final BlockingQueue<Map<Object, Object>> secondPriorityQueue = new LinkedBlockingQueue<Map<Object, Object>>();
-  private static final BlockingQueue<Map<Object, Object>> thirdPriorityQueue  = new LinkedBlockingQueue<Map<Object, Object>>();
+  private static final BlockingQueue<Map<Object, Object>> thirdPriorityQueue = new LinkedBlockingQueue<Map<Object, Object>>();
 
   public EightDigitsApiRequestQueue(EightDigitsClient clientInstance) {
     this.clientInstance = clientInstance;

@@ -94,10 +94,10 @@ public class EightDigitsClient {
    * @return
    */
   public void auth(String apiKey) {
-    if(this.getApiKey() == null) {
+    if (this.getApiKey() == null) {
       this.setApiKey(apiKey);
     }
-    
+
     Map<String, String> params = new HashMap<String, String>(1);
     params.put(Constants.API_KEY, this.getApiKey());
 
@@ -399,7 +399,7 @@ public class EightDigitsClient {
   public void setVisitorGSM(String value) {
     this.setVisitorAttribute(Constants.GSM, value);
   }
-  
+
   /**
    * Main API request method
    * 
@@ -484,7 +484,7 @@ public class EightDigitsClient {
   public void setActivity(Activity activity) {
     this.activity = activity;
   }
-  
+
   public String getAuthToken() {
     return authToken;
   }
@@ -572,8 +572,7 @@ public class EightDigitsClient {
   public void setApiKey(String apiKey) {
     this.apiKey = apiKey;
   }
-  
-  
+
   /**
    * Formats url
    * 
@@ -583,9 +582,9 @@ public class EightDigitsClient {
    * @return
    */
   private String formatUrlPrefix(String urlPrefix) {
-    if (!urlPrefix.startsWith(Constants.HTTP))
-      urlPrefix = Constants.HTTP + urlPrefix;
-
+    if (!urlPrefix.startsWith(Constants.HTTP) && !urlPrefix.startsWith(Constants.HTTPS))
+      urlPrefix = Constants.HTTPS + urlPrefix;
+    
     if (urlPrefix.endsWith(Constants.BACKSLASH))
       urlPrefix = urlPrefix.substring(0, urlPrefix.length() - 1);
 

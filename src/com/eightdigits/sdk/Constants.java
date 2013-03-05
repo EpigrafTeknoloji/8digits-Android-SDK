@@ -41,5 +41,5 @@ public class Constants {
   public static final String API_KEY = "apiKey";
   public static final String GSM = "gsm";
   public static final String AVATAR_PATH = "avatarPath";
-
+  public static final String HTTPS = "https://";
 }
