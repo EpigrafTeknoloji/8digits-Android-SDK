@@ -39,7 +39,7 @@ public class Constants {
   public static final String LONGITUDE = "longitude";
   public static final String LATITUDE = "latitude";
   public static final String API_KEY = "apiKey";
-  public static final String GSM = "gsm";
+  public static final String GSM_UPPERCASE = "GSM";
   public static final String AVATAR_PATH = "avatarPath";
   public static final String HTTPS = "https://";
 }

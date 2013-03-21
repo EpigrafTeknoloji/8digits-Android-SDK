@@ -293,7 +293,7 @@ public class EightDigitsClient {
    * 
    * @return List of badge id's
    */
-  public void badges(EightDigitsResultListener callback) {
+  public void visitorBadges(EightDigitsResultListener callback) {
     if (!EightDigitsClient.authRequestSent) {
       String errorMessage = "Please authenticate before calling badges method";
       Integer errorCode = -1002;
@@ -306,8 +306,26 @@ public class EightDigitsClient {
       params.put(Constants.VISITOR_CODE, this.getVisitorCode());
       this.api("/api/visitor/badges", params, callback, EightDigitsApiRequestQueue.THIRD_PRIORITY);
     }
-
   }
+  
+  /**
+   * Returns badges of account
+   * @param callback
+   */
+  public void badges(EightDigitsResultListener callback) {
+    if (!EightDigitsClient.authRequestSent) {
+      String errorMessage = "Please authenticate before calling badges method";
+      Integer errorCode = -1002;
+      callCallbackWithError(errorMessage, errorCode, callback);
+      logError(errorMessage);
+    } else {
+      Map<String, String> params = new HashMap<String, String>();
+      params.put(Constants.AUTH_TOKEN, this.getAuthToken());
+      params.put(Constants.TRACKING_CODE, this.getTrackingCode());
+      this.api("/api/badge/list", params, callback, EightDigitsApiRequestQueue.THIRD_PRIORITY);
+    }
+  }
+  
 
   /**
    * End screen hit for current hit. You should call this method in onDestroy of
@@ -397,7 +415,7 @@ public class EightDigitsClient {
    * @param value
    */
   public void setVisitorGSM(String value) {
-    this.setVisitorAttribute(Constants.GSM, value);
+    this.setVisitorAttribute(Constants.GSM_UPPERCASE, value);
   }
 
   /**
