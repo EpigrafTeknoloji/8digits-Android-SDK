@@ -79,8 +79,10 @@ this.eightdigitsClient.score(new EightDigitsResultListener() {
 You need to control ``error`` key in handleResult method. If result has error key, this means your api request is failed.
 
 ### Getting User Badges
-You can get user badges with ```badges``` method. This method just takes one callback argument. Callback is a instance of ``EightDigitsResultListener`` class. You can call this method how you call score method. You can see example above.
+You can get user badges with ```visitorBadges``` method. This method just takes one callback argument. Callback is a instance of ``EightDigitsResultListener`` class. You can call this method how you call score method. You can see example above.
 
+### Getting Account Badges
+You can get user badges with ```badges``` method. This method just takes one callback argument. Callback is a instance of ``EightDigitsResultListener`` class. You can call this method how you call score method. You can see example above.
 
 ### Ending Hit
 You should end user hits in your activities onDestroy method. You can do this by calling, ``endScreen`` method. You don't need to send any parameter to this method. 
