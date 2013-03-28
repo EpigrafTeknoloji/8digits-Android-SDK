@@ -417,8 +417,7 @@ public class EightDigitsClient {
    * 
    * @param value
    */
-  public void identifyAndSetVisitorGSM(String value) {
-    TelephonyManager manager = null;
+  public void identifyAndSetVisitorGSM() {
     Context c = null;
     
     if(this.getActivity() != null) {
@@ -428,7 +427,7 @@ public class EightDigitsClient {
     }
     
     if(c != null) {
-      manager = (TelephonyManager) this.getActivity().getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+      TelephonyManager manager = (TelephonyManager) this.getActivity().getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
       String operatorName = manager.getNetworkOperatorName();
       this.setVisitorAttribute(Constants.GSM_UPPERCASE, operatorName);
     }
