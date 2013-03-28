@@ -110,8 +110,10 @@ this.eightdigitsClient.setVisitorAvatar("http://foo.com/images/bar.jpg");
 ```
 
 ### Setting Visitor GSM
+You can set visitor GSM by calling `identifyAndSetVisitorGSM` method after creating visit.
+
 ```java
-this.eightdigitsClient.setGSM("<GSM_NAME>");
+this.eightdigitsClient.identifyAndSetVisitorGSM();
 ```
 
 ### Configuring Logging
