@@ -13,6 +13,7 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
+import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -411,11 +412,26 @@ public class EightDigitsClient {
   }
 
   /**
+   * Identifies Network operator name using TelephonyService and
+   * Sets visitor attribute
    * 
    * @param value
    */
-  public void setVisitorGSM(String value) {
-    this.setVisitorAttribute(Constants.GSM_UPPERCASE, value);
+  public void identifyAndSetVisitorGSM(String value) {
+    TelephonyManager manager = null;
+    Context c = null;
+    
+    if(this.getActivity() != null) {
+      c = this.getActivity().getApplicationContext();
+    } else if(this.getContext() != null) {
+      c = this.getContext();
+    }
+    
+    if(c != null) {
+      manager = (TelephonyManager) this.getActivity().getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+      String operatorName = manager.getNetworkOperatorName();
+      this.setVisitorAttribute(Constants.GSM_UPPERCASE, operatorName);
+    }
   }
 
   /**
